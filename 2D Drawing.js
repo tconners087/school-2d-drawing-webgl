@@ -20,7 +20,7 @@ var curr_draw_mode = draw_mode.DrawLines;
 
 // GL array buffers for points, lines, and triangles
 // \todo Student Note: need similar buffers for other draw modes...
-var vBuffer_Pnt, vBuffer_Line, vBuffer_tri, vBuffer_quad;
+var vBuffer_Pnt, vBuffer_Line, vBuffer_tri, vBuffer_quad, iBuffer_quad;
 
 // Array's storing 2D vertex coordinates of points, lines, triangles, etc.
 // Each array element is an array of size 2 storing the x,y coordinate.
@@ -84,6 +84,11 @@ function main() {
 
     vBuffer_quad = gl.createBuffer();
     if (!vBuffer_quad) {
+        console.log('Failed to create the buffer object');
+        return -1;
+    }
+    iBuffer_quad = gl.createBuffer();
+    if (!iBuffer_quad) {
         console.log('Failed to create the buffer object');
         return -1;
     }
@@ -257,11 +262,19 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
             if (num_pts_quad < 3) {
                 quad_verts.push([x,y]);
                 num_pts_quad++;
-                if(num_pts_quad%4 == 0) {
-                    console.log(num_pts_quad);
-                }
             } else {
                 quad_verts.push([x,y]);
+                quads.push(
+                    quad_verts[0],
+                    quad_verts[1],
+                    quad_verts[2],
+                    quad_verts[0],
+                    quad_verts[3],
+                    quad_verts[2]
+                );
+                console.log(quads);
+                quad_verts = [];
+
                 num_pts_quad = 0;
                 points.length = 0;
             }
@@ -300,7 +313,6 @@ function drawObjects(gl, a_Position, u_FragColor) {
 
     //Draw triangles
     if (tri_verts.length) {
-        console.log(tri_verts.length);
         gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer_tri);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(tri_verts), gl.STATIC_DRAW);
         gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
@@ -310,13 +322,15 @@ function drawObjects(gl, a_Position, u_FragColor) {
     }
 
     //Draw Quads
-    if (quad_verts.length > 3) {
+    if (quads.length) {
         gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer_quad);
-        gl.bufferData(gl.ARRAY_BUFFER, flatten(quad_verts), gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(quads), gl.STATIC_DRAW);
         gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(a_Position);
         gl.uniform4f(u_FragColor, 1.0, 0.0, 0.0, 1.0);
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, quad_verts.length);
+        gl.drawArrays(gl.TRIANGLES, 0, quads.length);
+
+        //divide quad_verts.length/2
     }
     
     // draw primitive creation vertices 
