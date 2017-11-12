@@ -18,6 +18,11 @@ var curr_draw_mode = draw_mode.DrawLines;
 
 var select_mode = {SelectLine: 0, SelectTri: 1, None: 2};
 var curr_select_mode = select_mode.None;
+//object that holds selected triangles between selections to iterate through overlapping triangles
+var selectedTris = {
+    tris: [],
+    index: 0
+};
 
 // GL array buffers for points, lines, and triangles
 // \todo Student Note: need similar buffers for other draw modes...
@@ -362,8 +367,56 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                     triangles.push(triangle);
                 }
             }
-            if (triangles) {
-                console.log(triangles[0].barycentric_coord);
+            if (triangles.length != 0) {
+                //Check to see if previously selected triangles == currently selected triangles
+                if (triangles.length == selectedTris.tris.length) {
+                    var different = false;
+                    //if any element in the new array is different than old array
+                    for(i = 0; i < triangles.length; i++) {
+                        //create objects to compare that don't include the barycentric coordinates of the selected point
+                        var iTri = {
+                            p0: triangles[i].point0,
+                            p1: triangles[i].point1,
+                            p2: triangles[i].point2
+                        };
+
+                        var sTri = {
+                            p0: selectedTris.tris[i].point0,
+                            p1: selectedTris.tris[i].point1,
+                            p2: selectedTris.tris[i].point2
+                        };
+
+                        if (JSON.stringify(iTri)!=JSON.stringify(sTri))
+                            different = true;
+                    }
+                    if (different) {
+                        //console.log("new triangle arrangment selected");
+                        selectedTris.tris = [];
+                        for(i = 0; i < triangles.length; i++) {
+                            selectedTris.tris.push(triangles[i]);
+                        }
+                        selectedTris.index = 0;
+                    } else {
+                        //console.log("Same triangles selected.");
+                        //console.log("previous index: " + selectedTris.index);
+                        selectedTris.index += 1;
+                        if (selectedTris.index > selectedTris.tris.length - 1) {
+                            selectedTris.index = 0;
+                        }
+                        //console.log("new index: " + selectedTris.index);
+                    }
+                } else {
+                    //console.log("new triangle arrangement selected");
+                    selectedTris.tris = [];
+                    for(i = 0; i < triangles.length; i++) {
+                        selectedTris.tris.push(triangles[i]);
+                    }
+                    selectedTris.index = 0;
+                }
+                //If the user has clicked on the same group of triangles, 
+                curr_selected_obj = selectedTris.tris[selectedTris.index];
+            } else {
+                console.log("no triangles selected");
             }
         break;
     }
@@ -426,6 +479,12 @@ function drawObjects(gl, a_Position, u_FragColor) {
         if(curr_selected_obj.objType == "LINE") {
             vPoints.push(curr_selected_obj.point0.array);
             vPoints.push(curr_selected_obj.point1.array);
+        }
+
+        if(curr_selected_obj.objType == "TRIANGLE") {
+            vPoints.push(curr_selected_obj.point0.array);
+            vPoints.push(curr_selected_obj.point1.array);
+            vPoints.push(curr_selected_obj.point2.array);
         }
 
         for (i = 0; i < vPoints.length; i++) {
