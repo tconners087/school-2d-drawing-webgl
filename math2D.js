@@ -185,10 +185,30 @@ Vec2.prototype.mag = function ()
  */
 function barycentric (p0, p1, p2, p)
 {
-    /*
-     * \todo needs to be implemented
-     */    
-    return [0,0,0];
+    //p = p0 + (p1 - p0) * s + (p2-p0) * t
+    //p is within the triangle IFF 0 <= s <= 1 && 0 <= t <= 1 && s+t <=1
+    //s,t, and 1 - s - t  == barycentric coordinates of p
+
+    //area of triangle given arbitrary points p0,p1,p2
+    var area = 0.5 * (-p1.array[1]*p2.array[0] +
+    p0.array[1]*(-p1.array[0] + p2.array[0]) +
+    p0.array[0]*(p1.array[1] - p2.array[1]) +
+    p1.array[0]*p2.array[1]);
+    
+    //solve for s
+    var s = (1/(2*area))*(p0.array[1]*p2.array[0] - p0.array[0]*p2.array[1] + 
+        (p2.array[1] - p0.array[1])*p.array[0] + 
+        (p0.array[0] - p2.array[0])*p.array[1]);
+    
+    //solve for t
+    var t = (1/(2*area))*(p0.array[0]*p1.array[1] - p0.array[1]*p1.array[0] + 
+        (p0.array[1] - p1.array[1])*p.array[0] + 
+        (p1.array[0] - p0.array[0])*p.array[1]);
+    
+    //barycentric coordinates of p
+    var bary_coord = [s, t, 1-s-t];
+
+    return bary_coord;
 }
 
 /**
@@ -243,10 +263,10 @@ function math2d_test()
     
     var v899 = new Vec2([4,3]);
     var distance = pointLineDist(v899, v1, v0);
-    console.log(distance);
+    //console.log(distance);
     
-
-      
+    console.log("v0: " + v0.array + " v1: " + v1.array + " v2: " + v2.array + " v899: " + v899.array);
+    console.log(barycentric(v0, v1, v2, v899));
 
     //console.log (JSON.stringify(M1));
     //console.log (JSON.stringify(v2));

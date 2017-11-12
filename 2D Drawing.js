@@ -16,7 +16,7 @@ var draw_mode = {DrawLines: 0, DrawTriangles: 1, ClearScreen: 2, None: 3, DrawQu
 // 'curr_draw_mode' tracks the active user interaction mode
 var curr_draw_mode = draw_mode.DrawLines;
 
-var select_mode = {SelectLine: 0, None: 2};
+var select_mode = {SelectLine: 0, SelectTri: 1, None: 2};
 var curr_select_mode = select_mode.None;
 
 // GL array buffers for points, lines, and triangles
@@ -185,6 +185,11 @@ function main() {
         curr_select_mode = select_mode.SelectLine;
     });
 
+    document.getElementById("SelectTriangleButton").addEventListener("click", function(){
+        curr_draw_mode = draw_mode.None;
+        curr_select_mode = select_mode.SelectTri;
+    });
+
     //\todo add event handlers for other buttons as required....            DONE
 
     // set event handlers for color sliders
@@ -332,6 +337,34 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                 curr_selected_obj = null;
             }
             
+        break;
+
+        case select_mode.SelectTri:
+            var p = new Vec2([x,y]);
+            var triangles = [];
+            var numTriangles = parseInt(tri_verts.length/3);
+            var numPoints = numTriangles * 3;
+            for (i = 0; i < numPoints; i+=3) {
+                var p0 = new Vec2(tri_verts[i]);
+                var p1 = new Vec2(tri_verts[i+1]);
+                var p2 = new Vec2(tri_verts[i+2]);
+                var bary_coords = barycentric(p0,p1,p2,p);
+                if (bary_coords[0] <= 1 && bary_coords[0] >= 0 &&
+                    bary_coords[1] <= 1 && bary_coords[1] >= 0 &&
+                    bary_coords[2] <= 1 && bary_coords[2] >= 0) {
+                    var triangle = {
+                        objType: "TRIANGLE",
+                        point0: p0,
+                        point1: p1,
+                        point2: p2,
+                        barycentric_coord: bary_coords
+                    };
+                    triangles.push(triangle);
+                }
+            }
+            if (triangles) {
+                console.log(triangles[0].barycentric_coord);
+            }
         break;
     }
     
