@@ -12,11 +12,12 @@
  *****/
 
 // 'draw_mode' are names of the different user interaction modes.
-// \todo Student Note: others are probably needed...
 var draw_mode = {DrawLines: 0, DrawTriangles: 1, ClearScreen: 2, None: 3, DrawQuads: 4, Delete: 5};
-
 // 'curr_draw_mode' tracks the active user interaction mode
 var curr_draw_mode = draw_mode.DrawLines;
+
+var select_mode = {SelectLine: 0, None: 2};
+var curr_select_mode = select_mode.None;
 
 // GL array buffers for points, lines, and triangles
 // \todo Student Note: need similar buffers for other draw modes...
@@ -27,11 +28,11 @@ var vBuffer_Pnt, vBuffer_Line, vBuffer_tri, vBuffer_quad, iBuffer_quad;
 // \todo Student Note: need similar arrays for other draw modes...
 var points = [], line_verts = [], tri_verts = [], quad_verts = [], quads = [];
 
-// count number of points clicked for new line
 var num_pts_line = 0;
 var num_pts_tri = 0;
 var num_pts_quad = 0;
-// \todo need similar counters for other draw modes...
+
+var curr_selected_obj = null;
 
 
 /*****
@@ -41,7 +42,7 @@ var num_pts_quad = 0;
  *****/
 function main() {
     
-    math2d_test();
+    //math2d_test();
     
     /**
      **      Initialize WebGL Components
@@ -131,12 +132,14 @@ function main() {
             "click",
             function () {
                 curr_draw_mode = draw_mode.DrawLines;
+                curr_select_mode = select_mode.None;
             });
 
     document.getElementById("TriangleButton").addEventListener(
             "click",
             function () {
                 curr_draw_mode = draw_mode.DrawTriangles;
+                curr_select_mode = select_mode.None;
             });    
     
     document.getElementById("ClearScreenButton").addEventListener(
@@ -154,6 +157,7 @@ function main() {
                 gl.clear(gl.COLOR_BUFFER_BIT);
                 
                 curr_draw_mode = draw_mode.DrawLines;
+                curr_select_mode = select_mode.None;
             });
             
     document.getElementById("QuadButton").addEventListener("click", function(){
@@ -162,6 +166,11 @@ function main() {
 
     document.getElementById("DeleteButton").addEventListener("click", function(){
         //Figure this out later
+    });
+
+    document.getElementById("SelectLineButton").addEventListener("click", function(){
+        curr_draw_mode = draw_mode.None;
+        curr_select_mode = select_mode.SelectLine;
     });
 
     //\todo add event handlers for other buttons as required....            DONE
@@ -280,6 +289,38 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                 points.length = 0;
             }
             break;
+    }
+
+    switch(curr_select_mode) {
+        case select_mode.SelectLine:
+            var p = new Vec2([x, y]);
+            var lines = []; //array for storing drawn lines
+            var numLines = parseInt(line_verts.length/2); //number of fully drawn lines
+            var numPoints = numLines * 2; //each drawn line has 2 vertices
+            for (i = 0; i < numPoints; i+=2) {
+                var p0 = new Vec2(line_verts[i]);
+                var p1 = new Vec2(line_verts[i+1]);
+                var distance = pointLineDist(p0, p1, p);
+                var line = {
+                    point0: p0,
+                    point1: p1,
+                    d: distance
+                };
+                lines.push(line);
+            }
+            //sort lines by distance from mouse click point
+            lines.sort(function(a,b){ return a.d - b.d; });
+            //if the closest_line (lines[0]) to clicked point is sufficiently 
+            //close to clicked point, curr_selected_object = closest_line.
+            //else, curr_selected_obj = null
+            if (lines[0] != null && lines[0].d <= 0.025) {
+                curr_selected_obj = lines[0];
+            } else {
+                curr_selected_obj = null;
+            }
+            console.log(curr_selected_obj);
+            
+        break;
     }
     
     drawObjects(gl,a_Position, u_FragColor);

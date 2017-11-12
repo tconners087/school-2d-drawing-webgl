@@ -200,9 +200,18 @@ function barycentric (p0, p1, p2, p)
  */
 function pointLineDist(p0, p1, p)
 {
-    var direction = new Vec2(p1.sub(p0));
-    var distance = Math.abs()
-    return 0;
+    //Magnitude of the line as denominator
+    var direction = new Vec2(p1);
+    direction.sub(p0);
+    var denominator = direction.mag();
+    //Calculate the determinant as numerator
+    var a = p1.array[0] - p0.array[0];
+    var d = p0.array[1] - p.array[1];
+    var b = p0.array[0] - p.array[0];
+    var c = p1.array[1] - p0.array[1];
+    var numerator = Math.abs((a*d) - (b*c));
+    var distance = numerator/denominator;
+    return distance;
 }
 
 /**
@@ -233,19 +242,21 @@ function math2d_test()
     vy.multiply(M1);       
     
     var v899 = new Vec2([4,3]);
-    console.log(v899.mag())
+    var distance = pointLineDist(v899, v1, v0);
+    console.log(distance);
+    
 
       
 
-    console.log (JSON.stringify(M1));
-    console.log (JSON.stringify(v2));
-    console.log("v0: " + v0.array + " v1: " + v1.array);
+    //console.log (JSON.stringify(M1));
+    //console.log (JSON.stringify(v2));
+    //console.log("v0: " + v0.array + " v1: " + v1.array);
     var dotprod = v0.dot(v1);
-    console.log (dotprod);  
+    //console.log (dotprod);  
     v0.add(v1);
-    console.log("v0: " + v0.array);
+    //console.log("v0: " + v0.array);
 
     
-    console.log (v0.dot(v1));
-    console.log (v0.mag());
+    //console.log (v0.dot(v1));
+    //console.log (v0.mag());
 }
