@@ -22,6 +22,8 @@ var curr_select_mode = select_mode.None;
 // GL array buffers for points, lines, and triangles
 // \todo Student Note: need similar buffers for other draw modes...
 var vBuffer_Pnt, vBuffer_Line, vBuffer_tri, vBuffer_quad, iBuffer_quad;
+//buffer for vertices of selected objects
+var vBuffer_sel_Pnts;
 
 // Array's storing 2D vertex coordinates of points, lines, triangles, etc.
 // Each array element is an array of size 2 storing the x,y coordinate.
@@ -94,6 +96,12 @@ function main() {
         return -1;
     }
 
+    vBuffer_sel_Pnts = gl.createBuffer();
+    if (!vBuffer_sel_Pnts) {
+        console.log('Failed to create the buffer object');
+        return -1;
+    }
+
     var skeleton=true;
     if(skeleton)
     {
@@ -153,6 +161,10 @@ function main() {
                     line_verts.pop();
                 while (tri_verts.length > 0)
                     tri_verts.pop();
+                while (quad_verts.length > 0)
+                    quad_verts.pop();
+                while (quads.length > 0)
+                    quads.pop();
 
                 gl.clear(gl.COLOR_BUFFER_BIT);
                 
@@ -302,6 +314,7 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                 var p1 = new Vec2(line_verts[i+1]);
                 var distance = pointLineDist(p0, p1, p);
                 var line = {
+                    objType: "LINE",
                     point0: p0,
                     point1: p1,
                     d: distance
@@ -318,7 +331,6 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
             } else {
                 curr_selected_obj = null;
             }
-            console.log(curr_selected_obj);
             
         break;
     }
@@ -371,6 +383,30 @@ function drawObjects(gl, a_Position, u_FragColor) {
         gl.enableVertexAttribArray(a_Position);
         gl.uniform4f(u_FragColor, 1.0, 0.0, 0.0, 1.0);
         gl.drawArrays(gl.TRIANGLES, 0, quads.length);
+    }
+
+    //Draw vertices of selected object
+    if (curr_selected_obj) {
+        var vPoints = [];
+        var vPointsFlattened = [];
+        
+        if(curr_selected_obj.objType == "LINE") {
+            vPoints.push(curr_selected_obj.point0.array);
+            vPoints.push(curr_selected_obj.point1.array);
+        }
+
+        for (i = 0; i < vPoints.length; i++) {
+            vPointsFlattened.push(vPoints[i][0]);
+            vPointsFlattened.push(vPoints[i][1]);
+        }
+
+        vPointsFlattened = flatten(vPointsFlattened);
+        gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer_sel_Pnts);
+        gl.bufferData(gl.ARRAY_BUFFER, vPointsFlattened, gl.STATIC_DRAW);
+        gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(a_Position);
+        gl.uniform4f(u_FragColor, 1.0, 1.0, 0.0, 1.0);
+        gl.drawArrays(gl.POINTS, 0, vPoints.length);    
     }
     
     // draw primitive creation vertices 
