@@ -123,9 +123,7 @@ Vec2.prototype.add = function (v)
  */
 Vec2.prototype.sub = function (v)
 {
-    /*
-     * \todo needs to be implemented
-     */    
+    this.array.set([this.array[0] - v.array[0], this.array[1] - v.array[1]]);   
 };
 
 /**
@@ -161,10 +159,8 @@ Vec2.prototype.rightMultiply = function (m)
  */
 Vec2.prototype.dot = function (v)
 {
-    /*
-     * \todo needs to be implemented
-     */
-    return 0;
+    var dotProduct = (this.array[0] * v.x + this.array[1] * v.y);
+    return dotProduct;
 };
 
 /**
@@ -173,10 +169,8 @@ Vec2.prototype.dot = function (v)
  */
 Vec2.prototype.mag = function ()
 {
-    /*
-     * \todo needs to be implemented
-     */
-    return 0;
+    var magnitude = Math.sqrt(Math.pow(this.array[0], 2) + Math.pow(this.array[1], 2));
+    return magnitude;
 };
 
 /**
@@ -206,9 +200,8 @@ function barycentric (p0, p1, p2, p)
  */
 function pointLineDist(p0, p1, p)
 {
-     /*
-     * \todo needs to be implemented
-     */    
+    var direction = new Vec2(p1.sub(p0));
+    var distance = Math.abs()
     return 0;
 }
 
@@ -221,7 +214,7 @@ function pointLineDist(p0, p1, p)
 function math2d_test()
 {
     var M1 = new Mat2();
-    var v0 = new Vec2(), v1 = new Vec2([5.0,5.0]), v2, 
+    var v0 = new Vec2(), v1 = new Vec2([4.0,5.0]), v2, 
             vx = new Vec2([1.0,0.0]),
             vy = new Vec2([0.0,1.0]);
     
@@ -239,8 +232,20 @@ function math2d_test()
     vx.multiply(M1);       
     vy.multiply(M1);       
     
+    var v899 = new Vec2([4,3]);
+    console.log(v899.mag())
+
+      
+
     console.log (JSON.stringify(M1));
     console.log (JSON.stringify(v2));
+    console.log("v0: " + v0.array + " v1: " + v1.array);
+    var dotprod = v0.dot(v1);
+    console.log (dotprod);  
+    v0.add(v1);
+    console.log("v0: " + v0.array);
+
+    
     console.log (v0.dot(v1));
     console.log (v0.mag());
 }

@@ -41,7 +41,7 @@ var num_pts_quad = 0;
  *****/
 function main() {
     
-    //math2d_test();
+    math2d_test();
     
     /**
      **      Initialize WebGL Components
@@ -264,6 +264,7 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                 num_pts_quad++;
             } else {
                 quad_verts.push([x,y]);
+                //Quads are drawn as 2 triangles, so they need 6 vertices
                 quads.push(
                     quad_verts[0],
                     quad_verts[1],
@@ -272,9 +273,9 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                     quad_verts[3],
                     quad_verts[2]
                 );
-                console.log(quads);
+                //clear quad_verts
                 quad_verts = [];
-
+                
                 num_pts_quad = 0;
                 points.length = 0;
             }
@@ -329,8 +330,6 @@ function drawObjects(gl, a_Position, u_FragColor) {
         gl.enableVertexAttribArray(a_Position);
         gl.uniform4f(u_FragColor, 1.0, 0.0, 0.0, 1.0);
         gl.drawArrays(gl.TRIANGLES, 0, quads.length);
-
-        //divide quad_verts.length/2
     }
     
     // draw primitive creation vertices 
