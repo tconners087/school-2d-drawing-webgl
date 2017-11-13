@@ -24,6 +24,11 @@ var selectedTris = {
     index: 0
 };
 
+var selectedObjs = {
+    objs: [],
+    index: 0
+}
+
 // GL array buffers for points, lines, and triangles
 // \todo Student Note: need similar buffers for other draw modes...
 var vBuffer_Pnt, vBuffer_Line, vBuffer_tri, vBuffer_quad, iBuffer_quad;
@@ -113,8 +118,6 @@ function main() {
         document.getElementById("App_Title").innerHTML += "-Skeleton";
     }
 
-    // \todo create buffers for triangles and quads... DONE
-
     // Specify the color for clearing <canvas>
     gl.clearColor(0, 0, 0, 1);
 
@@ -185,15 +188,15 @@ function main() {
         //Figure this out later
     });
 
-    document.getElementById("SelectLineButton").addEventListener("click", function(){
-        curr_draw_mode = draw_mode.None;
-        curr_select_mode = select_mode.SelectLine;
-    });
+    //document.getElementById("SelectLineButton").addEventListener("click", function(){
+        //curr_draw_mode = draw_mode.None;
+        //curr_select_mode = select_mode.SelectLine;
+    //});
 
-    document.getElementById("SelectTriangleButton").addEventListener("click", function(){
-        curr_draw_mode = draw_mode.None;
-        curr_select_mode = select_mode.SelectTri;
-    });
+    //document.getElementById("SelectTriangleButton").addEventListener("click", function(){
+        //curr_draw_mode = draw_mode.None;
+        //curr_select_mode = select_mode.SelectTri;
+    //});
 
     //\todo add event handlers for other buttons as required....            DONE
 
@@ -256,70 +259,88 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
     x = ((x - rect.left) - canvas.width / 2) / (canvas.width / 2);
     y = (canvas.height / 2 - (y - rect.top)) / (canvas.height / 2);
 
-    if (curr_draw_mode !== draw_mode.None) {
-        // add clicked point to 'points'
-        points.push([x, y]);
-    }
-
-    // perform active drawing operation
-    switch (curr_draw_mode) {
-        case draw_mode.DrawLines:
-            // in line drawing mode, so draw lines
-            if (num_pts_line < 1) {			
-                // gathering points of new line segment, so collect points
-                line_verts.push([x, y]);
-                num_pts_line++;
+    //determine which mouse button was pushed
+    switch(ev.which) {
+        case 1:
+            //console.log("pressed LMB");
+            if (curr_draw_mode !== draw_mode.None) {
+                // add clicked point to 'points'
+                points.push([x, y]);
             }
-            else {						
-                // got final point of new line, so update the primitive arrays
-                line_verts.push([x, y]);
-                num_pts_line = 0;
-                points.length = 0;
+            // perform active drawing operation
+            switch (curr_draw_mode) {
+                case draw_mode.DrawLines:
+                    // in line drawing mode, so draw lines
+                    if (num_pts_line < 1) {			
+                        // gathering points of new line segment, so collect points
+                        line_verts.push([x, y]);
+                        num_pts_line++;
+                    }
+                    else {						
+                        // got final point of new line, so update the primitive arrays
+                        line_verts.push([x, y]);
+                        num_pts_line = 0;
+                        points.length = 0;
+                    }
+                    break;
+        
+                case draw_mode.DrawTriangles:
+                    if (num_pts_tri < 2){
+                        tri_verts.push([x,y]);
+                        num_pts_tri++;
+                    } else {
+                        tri_verts.push([x,y]);
+                        num_pts_tri = 0;
+                        points.length = 0;
+                    }
+                    break;
+        
+                case draw_mode.DrawQuads:
+                    if (num_pts_quad < 3) {
+                        quad_verts.push([x,y]);
+                        num_pts_quad++;
+                    } else {
+                        quad_verts.push([x,y]);
+                        //Quads are drawn as 2 triangles, so they need 6 vertices
+                        quads.push(
+                            quad_verts[0],
+                            quad_verts[1],
+                            quad_verts[2],
+                            quad_verts[0],
+                            quad_verts[3],
+                            quad_verts[2]
+                        );
+                        //clear quad_verts
+                        quad_verts = [];
+                        
+                        num_pts_quad = 0;
+                        points.length = 0;
+                    }
+                    break;
             }
             break;
-
-        case draw_mode.DrawTriangles:
-            if (num_pts_tri < 2){
-                tri_verts.push([x,y]);
-                num_pts_tri++;
-            } else {
-                tri_verts.push([x,y]);
-                num_pts_tri = 0;
-                points.length = 0;
-            }
+        case 2:
+            console.log("pressed MMB");
             break;
+        case 3:
+            //console.log("pressed RMB");
+            var p = new Vec2([x,y]);
 
-        case draw_mode.DrawQuads:
-            if (num_pts_quad < 3) {
-                quad_verts.push([x,y]);
-                num_pts_quad++;
-            } else {
-                quad_verts.push([x,y]);
-                //Quads are drawn as 2 triangles, so they need 6 vertices
-                quads.push(
-                    quad_verts[0],
-                    quad_verts[1],
-                    quad_verts[2],
-                    quad_verts[0],
-                    quad_verts[3],
-                    quad_verts[2]
-                );
-                //clear quad_verts
-                quad_verts = [];
-                
-                num_pts_quad = 0;
-                points.length = 0;
-            }
-            break;
-    }
+            //for all possible clicked objects
+            var clickedObjs = [];
 
-    switch(curr_select_mode) {
-        case select_mode.SelectLine:
-            var p = new Vec2([x, y]);
-            var lines = []; //array for storing drawn lines
+            //lines
+            var lines = [];
             var numLines = parseInt(line_verts.length/2); //number of fully drawn lines
-            var numPoints = numLines * 2; //each drawn line has 2 vertices
-            for (i = 0; i < numPoints; i+=2) {
+            var numLinePoints = numLines * 2; //each drawn line has 2 vertices
+
+            //triangles
+            var triangles = [];
+            var numTriangles = parseInt(tri_verts.length/3);
+            var numTriPoints = numTriangles * 3;
+
+            //Determine if a line is close to mouse click
+            for (i = 0; i < numLinePoints; i+=2) {
                 var p0 = new Vec2(line_verts[i]);
                 var p1 = new Vec2(line_verts[i+1]);
                 var distance = pointLineDist(p0, p1, p);
@@ -333,23 +354,13 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
             }
             //sort lines by distance from mouse click point
             lines.sort(function(a,b){ return a.d - b.d; });
-            //if the closest_line (lines[0]) to clicked point is sufficiently 
-            //close to clicked point, curr_selected_object = closest_line.
-            //else, curr_selected_obj = null
+
             if (lines[0] != null && lines[0].d <= 0.025) {
-                curr_selected_obj = lines[0];
-            } else {
-                curr_selected_obj = null;
+                clickedObjs.push(lines[0]);
             }
             
-        break;
-
-        case select_mode.SelectTri:
-            var p = new Vec2([x,y]);
-            var triangles = [];
-            var numTriangles = parseInt(tri_verts.length/3);
-            var numPoints = numTriangles * 3;
-            for (i = 0; i < numPoints; i+=3) {
+            //if the clicked point is within a triangle
+            for (i = 0; i < numTriPoints; i+=3) {
                 var p0 = new Vec2(tri_verts[i]);
                 var p1 = new Vec2(tri_verts[i+1]);
                 var p2 = new Vec2(tri_verts[i+2]);
@@ -365,61 +376,93 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                         barycentric_coord: bary_coords
                     };
                     triangles.push(triangle);
+                    clickedObjs.push(triangle);
                 }
             }
-            if (triangles.length != 0) {
-                //Check to see if previously selected triangles == currently selected triangles
-                if (triangles.length == selectedTris.tris.length) {
+
+            //Determine if currently selected objs == previously selected objs
+            //if currently selected objs == previously selected objs, curr_selected_obj is assigned the next obj
+            if (clickedObjs.length != 0) {
+                if (clickedObjs.length == selectedObjs.objs.length) {
                     var different = false;
                     //if any element in the new array is different than old array
-                    for(i = 0; i < triangles.length; i++) {
-                        //create objects to compare that don't include the barycentric coordinates of the selected point
-                        var iTri = {
-                            p0: triangles[i].point0,
-                            p1: triangles[i].point1,
-                            p2: triangles[i].point2
-                        };
+                    for(i = 0; i < clickedObjs.length; i++) {
+                        if (clickedObjs[i].objType == selectedObjs.objs[i].objType){
 
-                        var sTri = {
-                            p0: selectedTris.tris[i].point0,
-                            p1: selectedTris.tris[i].point1,
-                            p2: selectedTris.tris[i].point2
-                        };
+                            if (clickedObjs[i].objType == "TRIANGLE" && selectedObjs.objs[i].objType == "TRIANGLE") {
+                            //create objects to compare that don't include the barycentric coordinates of the selected point
 
-                        if (JSON.stringify(iTri)!=JSON.stringify(sTri))
+                                var iTri = {
+                                    p0: clickedObjs[i].point0,
+                                    p1: clickedObjs[i].point1,
+                                    p2: clickedObjs[i].point2
+                                };
+
+                                var sTri = {
+                                    p0: selectedObjs.objs[i].point0,
+                                    p1: selectedObjs.objs[i].point1,
+                                    p2: selectedObjs.objs[i].point2
+                                };
+
+                                if (JSON.stringify(iTri)!=JSON.stringify(sTri))
+                                    different = true;
+                            }
+
+                            if (clickedObjs[i].objType == "LINE" && selectedObjs.objs[i].objType == "LINE") {
+
+                                var iLine = {
+                                    p0: clickedObjs[i].point0,
+                                    p1: clickedObjs[i].point1
+                                };
+
+                                var sLine = {
+                                    p0: selectedObjs.objs[i].point0,
+                                    p1: selectedObjs.objs[i].point1
+                                };
+
+                                if (JSON.stringify(iLine)!=JSON.stringify(sLine))
+                                    different = true;
+                            }
+
+                        } else {
                             different = true;
+                        }
                     }
                     if (different) {
-                        //console.log("new triangle arrangment selected");
-                        selectedTris.tris = [];
-                        for(i = 0; i < triangles.length; i++) {
-                            selectedTris.tris.push(triangles[i]);
+                        //console.log("new object arrangment selected");
+                        selectedObjs.objs = [];
+                        for(i = 0; i < clickedObjs.length; i++) {
+                            selectedObjs.objs.push(clickedObjs[i]);
                         }
-                        selectedTris.index = 0;
+                        selectedObjs.index = 0;
                     } else {
-                        //console.log("Same triangles selected.");
-                        //console.log("previous index: " + selectedTris.index);
-                        selectedTris.index += 1;
-                        if (selectedTris.index > selectedTris.tris.length - 1) {
-                            selectedTris.index = 0;
+                        //console.log("Same objects selected.");
+                        //console.log("previous index: " + selectedObjs.index);
+                        selectedObjs.index += 1;
+                        if (selectedObjs.index > selectedObjs.objs.length - 1) {
+                            selectedObjs.index = 0;
                         }
-                        //console.log("new index: " + selectedTris.index);
+                        //console.log("new index: " + selectedObjs.index);
                     }
                 } else {
-                    //console.log("new triangle arrangement selected");
-                    selectedTris.tris = [];
-                    for(i = 0; i < triangles.length; i++) {
-                        selectedTris.tris.push(triangles[i]);
+                    //console.log("new object arrangement selected");
+                    selectedObjs.objs = [];
+                    for(i = 0; i < clickedObjs.length; i++) {
+                        selectedObjs.objs.push(clickedObjs[i]);
                     }
-                    selectedTris.index = 0;
+                    selectedObjs.index = 0;
                 }
-                //If the user has clicked on the same group of triangles, 
-                curr_selected_obj = selectedTris.tris[selectedTris.index];
+                curr_selected_obj=selectedObjs.objs[selectedObjs.index];
             } else {
-                console.log("no triangles selected");
+                console.log("no objects selected");
             }
-        break;
+
+            break;
+        default:
+            break;
     }
+
+    
     
     drawObjects(gl,a_Position, u_FragColor);
 }
