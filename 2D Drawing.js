@@ -207,7 +207,6 @@ function main() {
         if (curr_selected_obj) {
             //If selected object is a line, remove its vertices from line_verts
             if (curr_selected_obj.objType == "LINE") {
-                //curr_selected_type = selected_type.line;
                 for (i = 0; i < line_verts.length; i ++){
                     var temp = new Vec2(line_verts[i]).array;
                     var matchP0 = (curr_selected_obj.point0.array[0] == temp[0] &&
@@ -228,7 +227,6 @@ function main() {
             }
             //if selected object is a triangle, remove its vertices from tri_verts
             if (curr_selected_obj.objType == "TRIANGLE") {
-                //curr_selected_type = selected_type.triangle;
                 for (i = 0; i < tri_verts.length; i++){
                     var temp = new Vec2(tri_verts[i]).array;
                     var matchP0 = (curr_selected_obj.point0.array[0] == temp[0] &&
@@ -250,7 +248,6 @@ function main() {
                 }
             }
             if (curr_selected_obj.objType == "QUAD") {
-                //curr_selected_type = selected_type.quad;
                 for (i = 0; i < quads.length; i++){
                     var temp = new Vec2(quads[i]).array;
                     var matchP0 = (curr_selected_obj.point0.array[0] == temp[0] &&
@@ -273,7 +270,7 @@ function main() {
                     }
                 }
             }
-            //reset reference to null
+            //reset reference to null once vertices are removed
             curr_selected_obj = null;
         } else {
             console.log("nothing selected to delete");
@@ -538,10 +535,8 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                     //if any element in the new array is different than old array
                     for(i = 0; i < clickedObjs.length; i++) {
                         if (clickedObjs[i].objType == selectedObjs.objs[i].objType){
-
                             if (clickedObjs[i].objType == "TRIANGLE" && selectedObjs.objs[i].objType == "TRIANGLE") {
-                            //create objects to compare that don't include the barycentric coordinates of the selected point
-
+                            //create 'triangle' objects to compare that don't include the barycentric coordinates of the RMB click point
                                 var iTri = {
                                     p0: clickedObjs[i].point0,
                                     p1: clickedObjs[i].point1,
@@ -553,13 +548,13 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                                     p1: selectedObjs.objs[i].point1,
                                     p2: selectedObjs.objs[i].point2
                                 };
-
+                                
                                 if (JSON.stringify(iTri)!=JSON.stringify(sTri))
-                                    different = true;
+                                    different = true;   //new selected object composition exists
                             }
 
                             if (clickedObjs[i].objType == "LINE" && selectedObjs.objs[i].objType == "LINE") {
-
+                                //create 'line' objects to compare that don't include the point-line-distance of the RMB click point
                                 var iLine = {
                                     p0: clickedObjs[i].point0,
                                     p1: clickedObjs[i].point1
@@ -571,66 +566,68 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                                 };
 
                                 if (JSON.stringify(iLine)!=JSON.stringify(sLine))
-                                    different = true;
+                                    different = true;   //new selected object composition exists
                             }
 
                             if(clickedObjs[i].objType == "QUAD" && selectedObjs.objs[i].objType == "QUAD") {
                                 if (JSON.stringify(clickedObjs[i])!=JSON.stringify(selectedObjs.objs[i]))
-                                    different = true;
+                                    different = true;   //new selected object composition exists
                             }
 
                         } else {
+                            //if (clickedObjs[i].objType != selectedObjs.objs[i].objType)
                             different = true;
                         }
                     }
-                    if (different) {
-                        //console.log("new object arrangment selected");
+                    if (different) { //new object arrangement selected with RMB click
                         selectedObjs.objs = [];
                         for(i = 0; i < clickedObjs.length; i++) {
                             selectedObjs.objs.push(clickedObjs[i]);
                         }
                         selectedObjs.index = 0;
-                    } else {
-                        //console.log("Same objects selected.");
-                        //console.log("previous index: " + selectedObjs.index);
+                    } else { //clickedObjs == selectedObjs
+                        //increment index of selected objects to iterate through selected objects
                         selectedObjs.index += 1;
                         if (selectedObjs.index > selectedObjs.objs.length - 1) {
                             selectedObjs.index = 0;
                         }
-                        //console.log("new index: " + selectedObjs.index);
                     }
-                } else {
-                    //console.log("new object arrangement selected");
+                } else { //if (clickedObjs.length != selectedObjs.length)
+                    //new object arrangement selected with RMB click
                     selectedObjs.objs = [];
                     for(i = 0; i < clickedObjs.length; i++) {
                         selectedObjs.objs.push(clickedObjs[i]);
                     }
                     selectedObjs.index = 0;
                 }
+                //set the currently selected object to curr_selected_obj
                 curr_selected_obj=selectedObjs.objs[selectedObjs.index];
+
+                /**
+                 * index: used in function setSliders() to access array associated with rgba values for selected object type.
+                 *        the rgba values associated with the curr_selected_obj.objType are passed to the r g b sliders upon selection.
+                 */
                 if (curr_selected_obj.objType == "LINE") {
-                    curr_selected_type = selected_type.line;
                     index = 0;
                 }
                 if (curr_selected_obj.objType == "TRIANGLE") {
-                    curr_selected_type = selected_type.triangle;
                     index = 1;
                 }
                 if (curr_selected_obj.objType == "QUAD") {
-                    curr_selected_type = selected_type.quad;
                     index = 2;
                 }
             } else {
                 //console.log("no objects selected");
             }
+            
+            //set the r g b sliders to the stored curr_selected_obj.objType color
             setSliders();
             break;
         default:
             break;
     }
 
-    
-    
+    //drawObjects called to show indication vertices on selected object
     drawObjects(gl,a_Position, u_FragColor);
 }
 
