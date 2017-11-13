@@ -181,7 +181,78 @@ function main() {
     });
 
     document.getElementById("DeleteButton").addEventListener("click", function(){
-        //Figure this out later
+        if (curr_selected_obj) {
+            //If selected object is a line, remove its vertices from line_verts
+            if (curr_selected_obj.objType == "LINE") {
+                for (i = 0; i < line_verts.length; i ++){
+                    var temp = new Vec2(line_verts[i]).array;
+                    var matchP0 = (curr_selected_obj.point0.array[0] == temp[0] &&
+                                    curr_selected_obj.point0.array[1] == temp[1]);
+
+                    var matchP1 = (curr_selected_obj.point1.array[0] == temp[0] &&
+                                    curr_selected_obj.point1.array[1] == temp[1]);
+
+                    if (matchP0 || matchP1){
+                        if (line_verts.length == 1) {
+                            line_verts = [];
+                        } else {
+                            line_verts.splice(i, 1);
+                        }
+                        i = -1;
+                    }
+                }
+            }
+            //if selected object is a triangle, remove its vertices from tri_verts
+            if (curr_selected_obj.objType == "TRIANGLE") {
+                for (i = 0; i < tri_verts.length; i++){
+                    var temp = new Vec2(tri_verts[i]).array;
+                    var matchP0 = (curr_selected_obj.point0.array[0] == temp[0] &&
+                        curr_selected_obj.point0.array[1] == temp[1]);
+
+                    var matchP1 = (curr_selected_obj.point1.array[0] == temp[0] &&
+                        curr_selected_obj.point1.array[1] == temp[1]);
+
+                    var matchP2 = (curr_selected_obj.point2.array[0] == temp[0] &&
+                        curr_selected_obj.point2.array[1] == temp[1]);
+
+                    if (matchP0 || matchP1 || matchP2) {
+                        if (tri_verts.length == 1)
+                            tri_verts = [];
+                        else
+                            tri_verts.splice(i, 1);
+                        i = -1;
+                    }
+                }
+            }
+            if (curr_selected_obj.objType == "QUAD") {
+                for (i = 0; i < quads.length; i++){
+                    var temp = new Vec2(quads[i]).array;
+                    var matchP0 = (curr_selected_obj.point0.array[0] == temp[0] &&
+                        curr_selected_obj.point0.array[1] == temp[1]);
+
+                    var matchP1 = (curr_selected_obj.point1.array[0] == temp[0] &&
+                        curr_selected_obj.point1.array[1] == temp[1]);
+
+                    var matchP2 = (curr_selected_obj.point2.array[0] == temp[0] &&
+                        curr_selected_obj.point2.array[1] == temp[1]);
+                    
+                    var matchP4 = (curr_selected_obj.point4.array[0] == temp[0] &&
+                        curr_selected_obj.point4.array[1] == temp[1]);
+                    if (matchP0 || matchP1 || matchP2 || matchP4) {
+                        if (quads.length == 1)
+                            quads = [];
+                        else
+                            quads.splice(i, 1);
+                        i = -1;
+                    }
+                }
+            }
+            //reset reference to null
+            curr_selected_obj = null;
+        } else {
+            console.log("nothing selected to delete");
+        }
+        drawObjects(gl,a_Position, u_FragColor);
     });
 
     //document.getElementById("SelectLineButton").addEventListener("click", function(){
