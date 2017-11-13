@@ -16,14 +16,6 @@ var draw_mode = {DrawLines: 0, DrawTriangles: 1, ClearScreen: 2, None: 3, DrawQu
 // 'curr_draw_mode' tracks the active user interaction mode
 var curr_draw_mode = draw_mode.DrawLines;
 
-var select_mode = {SelectLine: 0, SelectTri: 1, None: 2};
-var curr_select_mode = select_mode.None;
-//object that holds selected triangles between selections to iterate through overlapping triangles
-var selectedTris = {
-    tris: [],
-    index: 0
-};
-
 var selectedObjs = {
     objs: [],
     index: 0
@@ -38,7 +30,7 @@ var vBuffer_sel_Pnts;
 // Array's storing 2D vertex coordinates of points, lines, triangles, etc.
 // Each array element is an array of size 2 storing the x,y coordinate.
 // \todo Student Note: need similar arrays for other draw modes...
-var points = [], line_verts = [], tri_verts = [], quad_verts = [], quads = [];
+var points = [], line_verts = [], tri_verts = [], quad_verts = [], quads = [], vPoints = [], vPointsFlattened = [];
 
 var num_pts_line = 0;
 var num_pts_tri = 0;
@@ -148,14 +140,12 @@ function main() {
             "click",
             function () {
                 curr_draw_mode = draw_mode.DrawLines;
-                curr_select_mode = select_mode.None;
             });
 
     document.getElementById("TriangleButton").addEventListener(
             "click",
             function () {
                 curr_draw_mode = draw_mode.DrawTriangles;
-                curr_select_mode = select_mode.None;
             });    
     
     document.getElementById("ClearScreenButton").addEventListener(
@@ -173,11 +163,17 @@ function main() {
                     quad_verts.pop();
                 while (quads.length > 0)
                     quads.pop();
-
+                while(selectedObjs.length > 0)
+                    selectedObjs.pop();
+                
+                //cleard so that selection vertices do not show for cleared objects
+                vPoints = [];
+                vPointsFlattened = [];
+                curr_selected_obj = null;
+                
                 gl.clear(gl.COLOR_BUFFER_BIT);
                 
                 curr_draw_mode = draw_mode.DrawLines;
-                curr_select_mode = select_mode.None;
             });
             
     document.getElementById("QuadButton").addEventListener("click", function(){
@@ -339,6 +335,11 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
             var numTriangles = parseInt(tri_verts.length/3);
             var numTriPoints = numTriangles * 3;
 
+            //quads
+            var quad_objects = [];
+            var numQuads = parseInt(quads.length/6);
+            var numQuadPoints = numQuads * 6;
+
             //Determine if a line is close to mouse click
             for (i = 0; i < numLinePoints; i+=2) {
                 var p0 = new Vec2(line_verts[i]);
@@ -378,6 +379,41 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                     triangles.push(triangle);
                     clickedObjs.push(triangle);
                 }
+            }
+            
+            //if the clicked point is withink a quadrilateral
+            for (i = 0; i < numQuadPoints; i+=6) {
+                var p0 = new Vec2(quads[i]);
+                var p1 = new Vec2(quads[i+1]);
+                var p2 = new Vec2(quads[i+2]);
+                var p3 = new Vec2(quads[i+3]);
+                var p4 = new Vec2(quads[i+4]);
+                var p5 = new Vec2(quads[i+5]);
+
+                var bary_coords_1 = barycentric(p0, p1, p2, p);
+                var bary_coords_2 = barycentric(p3, p4, p5, p);
+
+                var inTriangle_1 = (bary_coords_1[0] <= 1 && bary_coords_1[0] >= 0 &&
+                                    bary_coords_1[1] <= 1 && bary_coords_1[1] >= 0 &&
+                                    bary_coords_1[2] <= 1 && bary_coords_1[2] >= 0);
+                                    
+                var inTriangle_2 = (bary_coords_2[0] <= 1 && bary_coords_2[0] >= 0 &&
+                                    bary_coords_2[1] <= 1 && bary_coords_2[1] >= 0 &&
+                                    bary_coords_2[2] <= 1 && bary_coords_2[2] >= 0);
+
+                if (inTriangle_1 || inTriangle_2) {
+                    //console.log("quad selected");
+                    var quadrilateral = {
+                        objType: "QUAD",
+                        point0: p0,
+                        point1: p1,
+                        point2: p2,
+                        point3: p3,
+                        point4: p4,
+                        point5: p5
+                    };
+                    clickedObjs.push(quadrilateral);
+                } 
             }
 
             //Determine if currently selected objs == previously selected objs
@@ -424,6 +460,11 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                                     different = true;
                             }
 
+                            if(clickedObjs[i].objType == "QUAD" && selectedObjs.objs[i].objType == "QUAD") {
+                                if (JSON.stringify(clickedObjs[i])!=JSON.stringify(selectedObjs.objs[i]))
+                                    different = true;
+                            }
+
                         } else {
                             different = true;
                         }
@@ -454,7 +495,7 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                 }
                 curr_selected_obj=selectedObjs.objs[selectedObjs.index];
             } else {
-                console.log("no objects selected");
+                //console.log("no objects selected");
             }
 
             break;
@@ -488,7 +529,6 @@ function drawObjects(gl, a_Position, u_FragColor) {
         // share location with shader
         gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(a_Position);
-
         gl.uniform4f(u_FragColor, 0.0, 1.0, 0.0, 1.0);
         // draw the lines
         gl.drawArrays(gl.LINES, 0, line_verts.length );
@@ -516,8 +556,8 @@ function drawObjects(gl, a_Position, u_FragColor) {
 
     //Draw vertices of selected object
     if (curr_selected_obj) {
-        var vPoints = [];
-        var vPointsFlattened = [];
+        vPoints = [];
+        vPointsFlattened = [];
         
         if(curr_selected_obj.objType == "LINE") {
             vPoints.push(curr_selected_obj.point0.array);
@@ -530,14 +570,20 @@ function drawObjects(gl, a_Position, u_FragColor) {
             vPoints.push(curr_selected_obj.point2.array);
         }
 
+        if(curr_selected_obj.objType == "QUAD") {
+            vPoints.push(curr_selected_obj.point0.array);
+            vPoints.push(curr_selected_obj.point1.array);
+            vPoints.push(curr_selected_obj.point2.array);
+            vPoints.push(curr_selected_obj.point4.array);
+        }
+
         for (i = 0; i < vPoints.length; i++) {
             vPointsFlattened.push(vPoints[i][0]);
             vPointsFlattened.push(vPoints[i][1]);
         }
 
-        vPointsFlattened = flatten(vPointsFlattened);
         gl.bindBuffer(gl.ARRAY_BUFFER, vBuffer_sel_Pnts);
-        gl.bufferData(gl.ARRAY_BUFFER, vPointsFlattened, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(vPointsFlattened), gl.STATIC_DRAW);
         gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(a_Position);
         gl.uniform4f(u_FragColor, 1.0, 1.0, 0.0, 1.0);
