@@ -16,6 +16,9 @@ var draw_mode = {DrawLines: 0, DrawTriangles: 1, ClearScreen: 2, None: 3, DrawQu
 // 'curr_draw_mode' tracks the active user interaction mode
 var curr_draw_mode = draw_mode.DrawLines;
 
+var selected_type = {line: 0, triangle: 1, quad: 2};
+var curr_selected_type = selected_type.line;
+
 var selectedObjs = {
     objs: [],
     index: 0
@@ -38,6 +41,11 @@ var num_pts_quad = 0;
 
 var curr_selected_obj = null;
 
+var rgba_arr_line = [0.0,1.0,0.0,1.0];
+var rgba_arr_tri = [1.0,0.0,0.0,1.0];
+var rgba_arr_quad = [1.0,0.0,1.0,1.0];
+var rgba_arrays = [rgba_arr_line, rgba_arr_tri, rgba_arr_quad];
+var index = 0;
 
 /*****
  * 
@@ -54,6 +62,20 @@ function main() {
     
     // Retrieve <canvas> element
     var canvas = document.getElementById('webgl');
+    
+    switch(curr_selected_type) {
+        case selected_type.line:
+            index = 0;
+        break;
+
+        case selected_type.tri:
+            index = 1;
+        break;
+
+        case selected_type.quad:
+            index = 2;
+        break;
+    }
 
     // Get the rendering context for WebGL
     var gl = getWebGLContext(canvas);
@@ -92,6 +114,7 @@ function main() {
         console.log('Failed to create the buffer object');
         return -1;
     }
+
     iBuffer_quad = gl.createBuffer();
     if (!iBuffer_quad) {
         console.log('Failed to create the buffer object');
@@ -184,6 +207,7 @@ function main() {
         if (curr_selected_obj) {
             //If selected object is a line, remove its vertices from line_verts
             if (curr_selected_obj.objType == "LINE") {
+                //curr_selected_type = selected_type.line;
                 for (i = 0; i < line_verts.length; i ++){
                     var temp = new Vec2(line_verts[i]).array;
                     var matchP0 = (curr_selected_obj.point0.array[0] == temp[0] &&
@@ -204,6 +228,7 @@ function main() {
             }
             //if selected object is a triangle, remove its vertices from tri_verts
             if (curr_selected_obj.objType == "TRIANGLE") {
+                //curr_selected_type = selected_type.triangle;
                 for (i = 0; i < tri_verts.length; i++){
                     var temp = new Vec2(tri_verts[i]).array;
                     var matchP0 = (curr_selected_obj.point0.array[0] == temp[0] &&
@@ -225,6 +250,7 @@ function main() {
                 }
             }
             if (curr_selected_obj.objType == "QUAD") {
+                //curr_selected_type = selected_type.quad;
                 for (i = 0; i < quads.length; i++){
                     var temp = new Vec2(quads[i]).array;
                     var matchP0 = (curr_selected_obj.point0.array[0] == temp[0] &&
@@ -255,42 +281,39 @@ function main() {
         drawObjects(gl,a_Position, u_FragColor);
     });
 
-    //document.getElementById("SelectLineButton").addEventListener("click", function(){
-        //curr_draw_mode = draw_mode.None;
-        //curr_select_mode = select_mode.SelectLine;
-    //});
-
-    //document.getElementById("SelectTriangleButton").addEventListener("click", function(){
-        //curr_draw_mode = draw_mode.None;
-        //curr_select_mode = select_mode.SelectTri;
-    //});
-
-    //\todo add event handlers for other buttons as required....            DONE
-
     // set event handlers for color sliders
     /* \todo right now these just output to the console, code needs to be modified... */
     document.getElementById("RedRange").addEventListener(
             "input",
             function () {
-                console.log("RedRange:" + document.getElementById("RedRange").value);
+                //console.log("RedRange:" + document.getElementById("RedRange").value/100);
+                rgba_arrays[index][0] = document.getElementById("RedRange").value/100;
+                drawObjects(gl,a_Position, u_FragColor);
+                //console.log(rgba_arrays);  
             });
     document.getElementById("GreenRange").addEventListener(
             "input",
             function () {
-                console.log("GreenRange:" + document.getElementById("GreenRange").value);
+                //console.log("GreenRange:" + document.getElementById("GreenRange").value/100);
+                rgba_arrays[index][1] = document.getElementById("GreenRange").value/100;
+                drawObjects(gl,a_Position, u_FragColor);
+                //console.log(rgba_arrays);  
             });
     document.getElementById("BlueRange").addEventListener(
             "input",
             function () {
-                console.log("BlueRange:" + document.getElementById("BlueRange").value);
-            });                        
+                //console.log("BlueRange:" + document.getElementById("BlueRange").value/100);
+                rgba_arrays[index][2] = document.getElementById("BlueRange").value/100;
+                drawObjects(gl,a_Position, u_FragColor);
+                //console.log(rgba_arrays);  
+            });
+                          
             
     // init sliders 
     // \todo this code needs to be modified ...
-    document.getElementById("RedRange").value = 0;
-    document.getElementById("GreenRange").value = 100;
-    document.getElementById("BlueRange").value = 0;
-            
+    document.getElementById("RedRange").value = rgba_arrays[index][0] * 100;
+    document.getElementById("GreenRange").value = rgba_arrays[index][1] * 100;
+    document.getElementById("BlueRange").value = rgba_arrays[index][2] * 100;
     // Register function (event handler) to be called on a mouse press
     canvas.addEventListener(
             "mousedown",
@@ -315,6 +338,13 @@ function main() {
  * @param {Number} u_FragColor - GLSL (uniform) color
  * @returns {undefined}
  */
+
+function setSliders() {
+    document.getElementById("RedRange").value = rgba_arrays[index][0] * 100;
+    document.getElementById("GreenRange").value = rgba_arrays[index][1] * 100;
+    document.getElementById("BlueRange").value = rgba_arrays[index][2] * 100;
+}
+
 function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
     var x = ev.clientX; // x coordinate of a mouse pointer
     var y = ev.clientY; // y coordinate of a mouse pointer
@@ -565,10 +595,22 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                     selectedObjs.index = 0;
                 }
                 curr_selected_obj=selectedObjs.objs[selectedObjs.index];
+                if (curr_selected_obj.objType == "LINE") {
+                    curr_selected_type = selected_type.line;
+                    index = 0;
+                }
+                if (curr_selected_obj.objType == "TRIANGLE") {
+                    curr_selected_type = selected_type.triangle;
+                    index = 1;
+                }
+                if (curr_selected_obj.objType == "QUAD") {
+                    curr_selected_type = selected_type.quad;
+                    index = 2;
+                }
             } else {
                 //console.log("no objects selected");
             }
-
+            setSliders();
             break;
         default:
             break;
@@ -600,7 +642,7 @@ function drawObjects(gl, a_Position, u_FragColor) {
         // share location with shader
         gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(a_Position);
-        gl.uniform4f(u_FragColor, 0.0, 1.0, 0.0, 1.0);
+        gl.uniform4f(u_FragColor, rgba_arrays[0][0], rgba_arrays[0][1], rgba_arrays[0][2], rgba_arrays[0][3]);
         // draw the lines
         gl.drawArrays(gl.LINES, 0, line_verts.length );
     }
@@ -611,7 +653,7 @@ function drawObjects(gl, a_Position, u_FragColor) {
         gl.bufferData(gl.ARRAY_BUFFER, flatten(tri_verts), gl.STATIC_DRAW);
         gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(a_Position);
-        gl.uniform4f(u_FragColor, 1.0, 0.0, 0.0, 1.0);
+        gl.uniform4f(u_FragColor, rgba_arrays[1][0], rgba_arrays[1][1], rgba_arrays[1][2], rgba_arrays[1][3]);
         gl.drawArrays(gl.TRIANGLES, 0, tri_verts.length);
     }
 
@@ -621,7 +663,7 @@ function drawObjects(gl, a_Position, u_FragColor) {
         gl.bufferData(gl.ARRAY_BUFFER, flatten(quads), gl.STATIC_DRAW);
         gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(a_Position);
-        gl.uniform4f(u_FragColor, 1.0, 0.0, 0.0, 1.0);
+        gl.uniform4f(u_FragColor, rgba_arrays[2][0], rgba_arrays[2][1], rgba_arrays[2][2], rgba_arrays[2][3]);
         gl.drawArrays(gl.TRIANGLES, 0, quads.length);
     }
 
