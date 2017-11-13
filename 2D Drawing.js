@@ -282,7 +282,6 @@ function main() {
     });
 
     // set event handlers for color sliders
-    /* \todo right now these just output to the console, code needs to be modified... */
     document.getElementById("RedRange").addEventListener(
             "input",
             function () {
@@ -310,7 +309,6 @@ function main() {
                           
             
     // init sliders 
-    // \todo this code needs to be modified ...
     document.getElementById("RedRange").value = rgba_arrays[index][0] * 100;
     document.getElementById("GreenRange").value = rgba_arrays[index][1] * 100;
     document.getElementById("BlueRange").value = rgba_arrays[index][2] * 100;
@@ -339,6 +337,7 @@ function main() {
  * @returns {undefined}
  */
 
+ //Called when an object is selected to set sliders to that object type's current color
 function setSliders() {
     document.getElementById("RedRange").value = rgba_arrays[index][0] * 100;
     document.getElementById("GreenRange").value = rgba_arrays[index][1] * 100;
@@ -357,6 +356,7 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
     y = (canvas.height / 2 - (y - rect.top)) / (canvas.height / 2);
 
     //determine which mouse button was pushed
+    // 1: LMB, 2: MMB, 3: RMB
     switch(ev.which) {
         case 1:
             //console.log("pressed LMB");
@@ -380,7 +380,7 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                         points.length = 0;
                     }
                     break;
-        
+                //draw triangles
                 case draw_mode.DrawTriangles:
                     if (num_pts_tri < 2){
                         tri_verts.push([x,y]);
@@ -391,7 +391,7 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                         points.length = 0;
                     }
                     break;
-        
+                //draw quads
                 case draw_mode.DrawQuads:
                     if (num_pts_quad < 3) {
                         quad_verts.push([x,y]);
@@ -417,9 +417,11 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
             }
             break;
         case 2:
-            console.log("pressed MMB");
+            //MMB is unused
+            //console.log("pressed MMB");
             break;
         case 3:
+            //RMB is used to select drawn objects
             //console.log("pressed RMB");
             var p = new Vec2([x,y]);
 
@@ -433,30 +435,31 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
 
             //triangles
             var triangles = [];
-            var numTriangles = parseInt(tri_verts.length/3);
-            var numTriPoints = numTriangles * 3;
+            var numTriangles = parseInt(tri_verts.length/3); //number of fully drawn triangles
+            var numTriPoints = numTriangles * 3; //each triangle has 3 vertices
 
             //quads
             var quad_objects = [];
-            var numQuads = parseInt(quads.length/6);
-            var numQuadPoints = numQuads * 6;
+            var numQuads = parseInt(quads.length/6); //number of fully drawn quads
+            var numQuadPoints = numQuads * 6; //each quad has 6 vertices (4 actual, 6 points required to draw 2 triangles)
 
             //Determine if a line is close to mouse click
             for (i = 0; i < numLinePoints; i+=2) {
                 var p0 = new Vec2(line_verts[i]);
                 var p1 = new Vec2(line_verts[i+1]);
                 var distance = pointLineDist(p0, p1, p);
+                //new object to hold a 'line' 
                 var line = {
-                    objType: "LINE",
-                    point0: p0,
-                    point1: p1,
-                    d: distance
+                    objType: "LINE",    //for discerning selection
+                    point0: p0,         //Vec2 of line vertex
+                    point1: p1,         //Vec2 of line vertex
+                    d: distance         //distance of mouse click to line
                 };
-                lines.push(line);
+                lines.push(line);       //array that holds all 'line' objects
             }
             //sort lines by distance from mouse click point
             lines.sort(function(a,b){ return a.d - b.d; });
-
+            //if line is sufficiently close to mouse click (0.025 felt right)
             if (lines[0] != null && lines[0].d <= 0.025) {
                 clickedObjs.push(lines[0]);
             }
@@ -466,10 +469,11 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                 var p0 = new Vec2(tri_verts[i]);
                 var p1 = new Vec2(tri_verts[i+1]);
                 var p2 = new Vec2(tri_verts[i+2]);
-                var bary_coords = barycentric(p0,p1,p2,p);
-                if (bary_coords[0] <= 1 && bary_coords[0] >= 0 &&
+                var bary_coords = barycentric(p0,p1,p2,p);          //calculate barycentric coordinates of p given triangle vertices p0, p1, p2
+                if (bary_coords[0] <= 1 && bary_coords[0] >= 0 &&   //if point p is within the triangle
                     bary_coords[1] <= 1 && bary_coords[1] >= 0 &&
                     bary_coords[2] <= 1 && bary_coords[2] >= 0) {
+                    //new object to hold a 'triangle'
                     var triangle = {
                         objType: "TRIANGLE",
                         point0: p0,
@@ -477,33 +481,33 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                         point2: p2,
                         barycentric_coord: bary_coords
                     };
-                    triangles.push(triangle);
-                    clickedObjs.push(triangle);
+                    //triangles.push(triangle);
+                    clickedObjs.push(triangle); //if p is within 'triangle', triangle is selected
                 }
             }
             
             //if the clicked point is withink a quadrilateral
             for (i = 0; i < numQuadPoints; i+=6) {
+                //since quads are composed of 2 triangles, 6 vectors needed
                 var p0 = new Vec2(quads[i]);
                 var p1 = new Vec2(quads[i+1]);
                 var p2 = new Vec2(quads[i+2]);
                 var p3 = new Vec2(quads[i+3]);
                 var p4 = new Vec2(quads[i+4]);
                 var p5 = new Vec2(quads[i+5]);
-
+                //calculated the barycentric coordinates of p in both triangles
                 var bary_coords_1 = barycentric(p0, p1, p2, p);
                 var bary_coords_2 = barycentric(p3, p4, p5, p);
-
+                //if p is in 1st triangle
                 var inTriangle_1 = (bary_coords_1[0] <= 1 && bary_coords_1[0] >= 0 &&
                                     bary_coords_1[1] <= 1 && bary_coords_1[1] >= 0 &&
                                     bary_coords_1[2] <= 1 && bary_coords_1[2] >= 0);
-                                    
+                //if p is in 2nd triangle       
                 var inTriangle_2 = (bary_coords_2[0] <= 1 && bary_coords_2[0] >= 0 &&
                                     bary_coords_2[1] <= 1 && bary_coords_2[1] >= 0 &&
                                     bary_coords_2[2] <= 1 && bary_coords_2[2] >= 0);
-
+                //if p is in either triangle, quad is selected
                 if (inTriangle_1 || inTriangle_2) {
-                    //console.log("quad selected");
                     var quadrilateral = {
                         objType: "QUAD",
                         point0: p0,
@@ -518,10 +522,19 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
             }
 
             //Determine if currently selected objs == previously selected objs
-            //if currently selected objs == previously selected objs, curr_selected_obj is assigned the next obj
+            //if currently selected objs == previously selected objs, 
+            //curr_selected_obj is assigned the next obj in selectedObjs
+
+            /**
+             * selectedObjs: 'objects' (lines, triangles, quads) that were identified as selected on LAST RMB click
+             * clickedObjs: 'objects' (lines, triangles, quads) that were identified as selected on THIS RMB click
+             * 
+             * Determine if (clickedObjs == selectedObjs)
+             * if (clickedObjs == selectedObjs) => curr_selected_obj = next_obj in selectedObjs
+             */
             if (clickedObjs.length != 0) {
                 if (clickedObjs.length == selectedObjs.objs.length) {
-                    var different = false;
+                    var different = false; //flag for noting change in selected objects
                     //if any element in the new array is different than old array
                     for(i = 0; i < clickedObjs.length; i++) {
                         if (clickedObjs[i].objType == selectedObjs.objs[i].objType){
