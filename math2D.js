@@ -185,20 +185,23 @@ Vec2.prototype.mag = function ()
  */
 function barycentric (p0, p1, p2, p)
 {
-    //p = p0 + (p1 - p0) * s + (p2-p0) * t
-    //p is within the triangle IFF 0 <= s <= 1 && 0 <= t <= 1 && s+t <=1
+    //p = p0 + (p1 - p0) * s + (p2-p0) * t 
     //s,t, and 1 - s - t  == barycentric coordinates of p
 
-    //area of triangle given arbitrary points p0,p1,p2
-    var area = 0.5 * (-p1.array[1]*p2.array[0] +
-    p0.array[1]*(-p1.array[0] + p2.array[0]) +
-    p0.array[0]*(p1.array[1] - p2.array[1]) +
-    p1.array[0]*p2.array[1]);
+    /*
+     * Shoelace formula for area of a triangle given 3 points:
+     * Area = (1/2)(xAyB + xByC + xCyA - xAyC - xCyB - xByA)
+     *      = (1/2)(p0x*p1y + p1x*p2y + p2x*p0y - p0x*p2y - p2x*p1y - p1x*p0y)
+     * Area is signed.
+     */
     
+    var area = (0.5)*(p0.array[0]*p1.array[1] + p1.array[0]*p2.array[1] + p2.array[0]*p0.array[1] -
+                        p0.array[0]*p2.array[1] - p2.array[0]*p1.array[1] - p1.array[0]*p0.array[1]);
+
     //solve for s
     var s = (1/(2*area))*(p0.array[1]*p2.array[0] - p0.array[0]*p2.array[1] + 
         (p2.array[1] - p0.array[1])*p.array[0] + 
-        (p0.array[0] - p2.array[0])*p.array[1]);
+        (p0.array[0] - p2.array[0])*p.array[1]);    
     
     //solve for t
     var t = (1/(2*area))*(p0.array[0]*p1.array[1] - p0.array[1]*p1.array[0] + 
@@ -224,6 +227,7 @@ function pointLineDist(p0, p1, p)
     var direction = new Vec2(p1);
     direction.sub(p0);
     var denominator = direction.mag();
+    //console.log(p0.mag() + " " + p1.mag() + " " + p.mag());
     //Calculate the determinant as numerator
     var a = p1.array[0] - p0.array[0];
     var d = p0.array[1] - p.array[1];

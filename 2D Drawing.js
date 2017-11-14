@@ -25,14 +25,12 @@ var selectedObjs = {
 }
 
 // GL array buffers for points, lines, and triangles
-// \todo Student Note: need similar buffers for other draw modes...
 var vBuffer_Pnt, vBuffer_Line, vBuffer_tri, vBuffer_quad, iBuffer_quad;
 //buffer for vertices of selected objects
 var vBuffer_sel_Pnts;
 
 // Array's storing 2D vertex coordinates of points, lines, triangles, etc.
 // Each array element is an array of size 2 storing the x,y coordinate.
-// \todo Student Note: need similar arrays for other draw modes...
 var points = [], line_verts = [], tri_verts = [], quad_verts = [], quads = [], vPoints = [], vPointsFlattened = [];
 
 var num_pts_line = 0;
@@ -130,7 +128,7 @@ function main() {
     var skeleton=true;
     if(skeleton)
     {
-        document.getElementById("App_Title").innerHTML += "-Skeleton";
+        document.getElementById("App_Title").innerHTML += "-Taylor Conners";
     }
 
     // Specify the color for clearing <canvas>
@@ -324,6 +322,15 @@ function main() {
  *****/
 
 /*
+ * When an object is selected, setSliders() is called to set sliders to that object type's current color
+ */
+function setSliders() {
+    document.getElementById("RedRange").value = rgba_arrays[index][0] * 100;
+    document.getElementById("GreenRange").value = rgba_arrays[index][1] * 100;
+    document.getElementById("BlueRange").value = rgba_arrays[index][2] * 100;
+}
+
+/*
  * Handle mouse button press event.
  * 
  * @param {MouseEvent} ev - event that triggered event handler
@@ -333,14 +340,6 @@ function main() {
  * @param {Number} u_FragColor - GLSL (uniform) color
  * @returns {undefined}
  */
-
- //Called when an object is selected to set sliders to that object type's current color
-function setSliders() {
-    document.getElementById("RedRange").value = rgba_arrays[index][0] * 100;
-    document.getElementById("GreenRange").value = rgba_arrays[index][1] * 100;
-    document.getElementById("BlueRange").value = rgba_arrays[index][2] * 100;
-}
-
 function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
     var x = ev.clientX; // x coordinate of a mouse pointer
     var y = ev.clientY; // y coordinate of a mouse pointer
@@ -457,8 +456,14 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
             //sort lines by distance from mouse click point
             lines.sort(function(a,b){ return a.d - b.d; });
             //if line is sufficiently close to mouse click (0.025 felt right)
-            if (lines[0] != null && lines[0].d <= 0.025) {
-                clickedObjs.push(lines[0]);
+            //if (lines[0] != null && lines[0].d <= 0.025) {
+                //clickedObjs.push(lines[0]);
+            //}
+
+            for (i = 0; i < lines.length; i++) {
+                if (lines[i].d <= 0.025) {
+                    clickedObjs.push(lines[i]);
+                }
             }
             
             //if the clicked point is within a triangle
@@ -517,10 +522,6 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                     clickedObjs.push(quadrilateral);
                 } 
             }
-
-            //Determine if currently selected objs == previously selected objs
-            //if currently selected objs == previously selected objs, 
-            //curr_selected_obj is assigned the next obj in selectedObjs
 
             /**
              * selectedObjs: 'objects' (lines, triangles, quads) that were identified as selected on LAST RMB click
@@ -617,6 +618,7 @@ function handleMouseDown(ev, gl, canvas, a_Position, u_FragColor) {
                     index = 2;
                 }
             } else {
+                curr_selected_obj = null;
                 //console.log("no objects selected");
             }
             
