@@ -1,5 +1,5 @@
 /**
- * @author Jialei Li, K.R. Subrmanian, Zachary Wartell
+ * @author Jialei Li, K.R. Subrmanian, Zachary Wartell, Taylor Conners
  * 
  * 
  */
@@ -77,6 +77,7 @@ function main() {
 
     // Get the rendering context for WebGL
     var gl = getWebGLContext(canvas);
+    //var gl = canvas.getContext('webgl');
     if (!gl) {
         console.log('Failed to get the rendering context for WebGL');
         return;

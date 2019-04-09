@@ -1,5 +1,5 @@
 /**
- * @author Zachary Wartell, ...
+ * @author Zachary Wartell, Taylor Conners
  * 
  * math2D.js is a set of 2D geometry related math functions and classes.
  * 
